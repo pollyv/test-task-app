@@ -22,18 +22,18 @@ export function useApiRequest<T>(initialParams: RequestParams) {
     error: null,
   });
 
-  const requestParams = ref<RequestParams>({
+  const requestParams: RequestParams = {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' },
     ...initialParams,
-  });
+  };
 
   const execute = async (paramsOverride?: Partial<RequestParams>) => {
     state.loading = true;
     state.success = false;
     state.error = null;
 
-    const finalParams = { ...requestParams.value, ...paramsOverride };
+    const finalParams = { ...requestParams, ...paramsOverride };
 
     try {
       const response = await fetch(finalParams.url, {
@@ -54,9 +54,11 @@ export function useApiRequest<T>(initialParams: RequestParams) {
     }
   };
 
-  const isLoading = computed(() => state.loading);
-  const isSuccess = computed(() => state.success);
-  const hasError = computed(() => !!state.error);
-
-  return { state, execute, isLoading, isSuccess, hasError };
+  return {
+    state,
+    execute,
+    isLoading: computed(() => state.loading),
+    isSuccess: computed(() => state.success),
+    hasError: computed(() => !!state.error),
+  };
 }
