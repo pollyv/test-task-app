@@ -2,7 +2,7 @@
   <v-app>
     <v-main>
       <v-container class="pa-6">
-        <h1 class="mb-6">Simple Form App</h1>
+        <h1 class="mb-6">Enter your name and e-mail:</h1>
         <v-card class="pa-6">
           <v-form @submit.prevent="submitForm">
             <v-text-field
@@ -11,6 +11,7 @@
               :error-messages="formState.fields.name.errors"
               outlined
               class="mb-4"
+              @blur="validateField('name', formData.name)"
             ></v-text-field>
             <v-text-field
               v-model="formData.email"
@@ -18,6 +19,7 @@
               :error-messages="formState.fields.email.errors"
               outlined
               class="mb-4"
+              @blur="validateField('email', formData.email)"
             ></v-text-field>
             <v-btn
               type="submit"
@@ -42,14 +44,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import { defineComponent, reactive } from 'vue';
 import { useFormValidation } from './composables/useFormValidation';
 import { useApiRequest } from './composables/useApiRequest';
 
 export default defineComponent({
   name: 'App',
   setup() {
-    const formData = ref({
+    const formData = reactive({
       name: '',
       email: '',
     });
@@ -65,7 +67,7 @@ export default defineComponent({
       ],
     };
 
-    const { formState, validateForm, isFormValid } = useFormValidation(formData, rules);
+    const { formState, validateForm, validateField, isFormValid } = useFormValidation(formData, rules);
     const { state: apiState, execute, isLoading } = useApiRequest<{ message: string }>({
       url: 'https://jsonplaceholder.typicode.com/posts',
       method: 'POST',
@@ -73,12 +75,11 @@ export default defineComponent({
 
     const submitForm = async () => {
       validateForm();
-      if (isFormValid.value) {
-        await execute({ body: formData.value });
-      }
+      if (!isFormValid.value) return;
+      await execute({ body: formData });
     };
 
-    return { formData, formState, isFormValid, submitForm, apiState, isLoading };
+    return { formData, formState, isFormValid, submitForm, apiState, isLoading, validateField };
   },
 });
 </script>
