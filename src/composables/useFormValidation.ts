@@ -1,4 +1,4 @@
-import { reactive, computed, Ref, UnwrapRef } from 'vue';
+import { reactive, computed, unref } from 'vue';
 
 type ValidationRule<T> = (value: T) => string | true;
 type FieldValidationRules<T> = ValidationRule<T>[];
@@ -15,27 +15,40 @@ interface FormValidationState<T> {
 }
 
 export function useFormValidation<T extends Record<string, any>>(
-  formData: Ref<T> | UnwrapRef<T>,
+  formData: T,
   rules: FormFieldsConfig<T>
 ) {
   const fieldsState = reactive<Record<string, FieldState>>({});
 
   Object.keys(rules).forEach((field) => {
-    fieldsState[field] = { isValid: true, errors: [] };
+    fieldsState[field] = {
+      isValid: true,
+      errors: [],
+    };
   });
 
   const validateField = (field: keyof T, value: unknown) => {
     const fieldRules = rules[field];
     const errors: string[] = [];
+
     fieldRules.forEach((rule) => {
       const result = rule(value);
-      if (typeof result === 'string') errors.push(result);
+      if (typeof result === 'string') {
+        errors.push(result);
+      }
     });
-    fieldsState[field] = { isValid: errors.length === 0, errors };
+
+    fieldsState[field] = {
+      isValid: errors.length === 0,
+      errors,
+    };
   };
 
   const validateForm = () => {
-    Object.keys(rules).forEach((field) => validateField(field, (formData as any)[field]));
+    const data = unref(formData);
+    Object.keys(rules).forEach((field) => {
+      validateField(field, data[field]);
+    });
   };
 
   const isFormValid = computed(() => Object.values(fieldsState).every((field) => field.isValid));
@@ -45,5 +58,10 @@ export function useFormValidation<T extends Record<string, any>>(
     isValid: isFormValid.value,
   });
 
-  return { formState, validateField, validateForm, isFormValid };
+  return {
+    formState,
+    validateField,
+    validateForm,
+    isFormValid,
+  };
 }
